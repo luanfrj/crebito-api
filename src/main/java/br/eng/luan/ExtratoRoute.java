@@ -1,8 +1,9 @@
-package eng.luan;
+package br.eng.luan;
 
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.model.dataformat.JsonLibrary;
 
-import eng.luan.processor.ExtratoProcessor;
+import br.eng.luan.processor.ExtratoProcessor;
 
 public class ExtratoRoute extends RouteBuilder {
 
@@ -23,8 +24,9 @@ public class ExtratoRoute extends RouteBuilder {
 
             .setBody().simple("SELECT * FROM transacoes WHERE cliente_id = :?id ORDER BY realizada_em DESC LIMIT 10;")
             .to("jdbc:datasource?useHeadersAsParameters=true")
-
-            .process(extratoProcessor);
+            .log("${body}")
+            .process(extratoProcessor)
+            .marshal().json(JsonLibrary.Jackson);
     }
 
     

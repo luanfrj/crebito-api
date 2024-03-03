@@ -1,4 +1,4 @@
-package eng.luan.model;
+package br.eng.luan.model;
 
 import java.util.ArrayList;
 

@@ -1,10 +1,12 @@
-package eng.luan;
+package br.eng.luan;
 
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.model.dataformat.JsonLibrary;
 
-import eng.luan.model.TransacaoResponse;
-import eng.luan.processor.AtualizaSaldoProcessor;
+import br.eng.luan.model.TransacaoRequest;
+import br.eng.luan.model.TransacaoResponse;
+import br.eng.luan.processor.AtualizaSaldoProcessor;
 
 public class TransacaoRoute extends RouteBuilder {
 
@@ -14,6 +16,7 @@ public class TransacaoRoute extends RouteBuilder {
     public void configure() throws Exception {
 
         from("direct:transacao")
+            .unmarshal().json(TransacaoRequest.class)
             .setHeader("id").method(Integer.class, "parseInt(${header.id})")
             .setHeader("valor").simple("${body.valor}")
             .setHeader("tipo").simple("${body.tipo}")
@@ -37,7 +40,8 @@ public class TransacaoRoute extends RouteBuilder {
             
             .setBody().constant(new TransacaoResponse())
             .script().simple("${body.setLimite(${header.limite})}")
-            .script().simple("${body.setSaldo(${header.saldo})}");
+            .script().simple("${body.setSaldo(${header.saldo})}")
+            .marshal().json(JsonLibrary.Jackson);
     }
     
 }
