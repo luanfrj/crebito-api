@@ -9,7 +9,6 @@ public class RestRoute extends RouteBuilder {
     public void configure() throws Exception {
 
         restConfiguration()
-            .component("servlet")
             .bindingMode(RestBindingMode.json);
 
         rest("/clientes")
