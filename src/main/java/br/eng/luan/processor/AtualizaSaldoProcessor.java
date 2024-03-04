@@ -3,6 +3,8 @@ package br.eng.luan.processor;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 
+import br.eng.luan.exception.ValidacaoException;
+
 public class AtualizaSaldoProcessor implements Processor {
 
     @Override
@@ -11,14 +13,29 @@ public class AtualizaSaldoProcessor implements Processor {
         int saldo = (int) exchange.getIn().getHeader("saldo");
         int limite = (int) exchange.getIn().getHeader("limite");
         String tipo = (String) exchange.getIn().getHeader("tipo");
-        if (tipo.equals("d")){
-            if (saldo - valor < limite * -1) {
-                throw new Exception("Limite Excedido");
-            } else {
-                saldo = saldo - valor;
-            }
-        } else {
-            saldo = saldo + valor;
+        String descricao = (String) exchange.getIn().getHeader("descricao");
+
+        if (!(exchange.getIn().getHeader("valor") instanceof Integer) || valor < 0) {
+            throw new ValidacaoException("Valor deve ser inteiro e positivo");
+        }
+
+        if (descricao.length() > 10) {
+            throw new ValidacaoException("A descrição não deve ser maior que 10 caracteres");
+        }
+
+        switch (tipo) {
+            case ("d"):
+                if (saldo - valor < -limite) {
+                    throw new ValidacaoException("Limite Excedido");
+                } else {
+                    saldo = saldo - valor;
+                }
+                break;
+            case ("c"):
+                saldo = saldo + valor;
+                break;
+            default:
+                throw new ValidacaoException("Tipo inválido");
         }
         exchange.getIn().setHeader("saldo", saldo);
     }

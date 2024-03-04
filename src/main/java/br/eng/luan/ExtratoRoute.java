@@ -1,5 +1,6 @@
 package br.eng.luan;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.dataformat.JsonLibrary;
 
@@ -18,15 +19,21 @@ public class ExtratoRoute extends RouteBuilder {
             .setBody().simple("SELECT * FROM clientes WHERE cliente_id = :?id;")
             .to("jdbc:datasource?useHeadersAsParameters=true")
 
-            .setHeader("saldo").simple("${body[0].get(saldo)}")
-            .setHeader("limite").simple("${body[0].get(limite)}")
-            .log("Saldo: ${header.saldo} Limite: ${header.limite}")
-
-            .setBody().simple("SELECT * FROM transacoes WHERE cliente_id = :?id ORDER BY realizada_em DESC LIMIT 10;")
-            .to("jdbc:datasource?useHeadersAsParameters=true")
-            .log("${body}")
-            .process(extratoProcessor)
-            .marshal().json(JsonLibrary.Jackson);
+            .choice()
+                .when().simple("${body.isEmpty()}")
+                    .setBody(constant("Cliente inexistente"))
+                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("404"))
+                .otherwise()
+                    .setHeader("saldo").simple("${body[0].get(saldo)}")
+                    .setHeader("limite").simple("${body[0].get(limite)}")
+                    .log("Saldo: ${header.saldo} Limite: ${header.limite}")
+        
+                    .setBody().simple("SELECT * FROM transacoes WHERE cliente_id = :?id ORDER BY realizada_em DESC LIMIT 10;")
+                    .to("jdbc:datasource?useHeadersAsParameters=true")
+                    .log("${body}")
+                    .process(extratoProcessor)
+                    .marshal().json(JsonLibrary.Jackson)
+            .end();
     }
 
     
