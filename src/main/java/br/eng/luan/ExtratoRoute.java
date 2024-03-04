@@ -26,11 +26,10 @@ public class ExtratoRoute extends RouteBuilder {
                 .otherwise()
                     .setHeader("saldo").simple("${body[0].get(saldo)}")
                     .setHeader("limite").simple("${body[0].get(limite)}")
-                    .log("Saldo: ${header.saldo} Limite: ${header.limite}")
         
                     .setBody().simple("SELECT * FROM transacoes WHERE cliente_id = :?id ORDER BY realizada_em DESC LIMIT 10;")
                     .to("jdbc:datasource?useHeadersAsParameters=true")
-                    .log("${body}")
+                    
                     .process(extratoProcessor)
                     .marshal().json(JsonLibrary.Jackson)
             .end();

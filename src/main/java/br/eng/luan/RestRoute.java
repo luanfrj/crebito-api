@@ -8,7 +8,9 @@ public class RestRoute extends RouteBuilder {
     @Override
     public void configure() throws Exception {
 
-        restConfiguration().bindingMode(RestBindingMode.json);
+        restConfiguration()
+            .component("servlet")
+            .bindingMode(RestBindingMode.json);
 
         rest("/clientes")
             .bindingMode(RestBindingMode.off)

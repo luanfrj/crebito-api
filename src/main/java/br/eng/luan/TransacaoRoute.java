@@ -48,11 +48,12 @@ public class TransacaoRoute extends RouteBuilder {
                         .script().simple("${body.setLimite(${header.limite})}")
                         .script().simple("${body.setSaldo(${header.saldo})}")
                         .marshal().json(JsonLibrary.Jackson)
-                        .log("Transação confirmada")
+                        .endDoTry()
                     .doCatch(ValidacaoException.class)
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("422"))
                         .setBody().simple("${exchangeProperty."+Exchange.EXCEPTION_CAUGHT+".getMessage()}")
-                    .endDoTry()
+                        .endDoTry()
+                    .end()
                     
             .end();
     }
