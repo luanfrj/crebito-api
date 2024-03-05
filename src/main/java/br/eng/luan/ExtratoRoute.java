@@ -5,17 +5,25 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.dataformat.JsonLibrary;
 
 import br.eng.luan.processor.ExtratoProcessor;
+import br.eng.luan.processor.LockProcessor;
+import br.eng.luan.processor.UnLockProcessor;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped 
 public class ExtratoRoute extends RouteBuilder {
 
-    ExtratoProcessor extratoProcessor = new ExtratoProcessor();
+    private ExtratoProcessor extratoProcessor = new ExtratoProcessor();
+
+    private LockProcessor lockProcessor = new LockProcessor();
+
+    private UnLockProcessor unLockProcessor = new UnLockProcessor();
 
     @Override
     public void configure() throws Exception {
         
         from("direct:extrato")
             .setHeader("id").method(Integer.class, "parseInt(${header.id})")
-
+            .process(lockProcessor)
             .setBody().simple("SELECT * FROM clientes WHERE cliente_id = :?id;")
             .to("jdbc:datasource?useHeadersAsParameters=true")
 
@@ -32,7 +40,8 @@ public class ExtratoRoute extends RouteBuilder {
                     
                     .process(extratoProcessor)
                     .marshal().json(JsonLibrary.Jackson)
-            .end();
+            .end()
+            .process(unLockProcessor);
     }
 
     

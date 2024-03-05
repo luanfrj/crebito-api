@@ -9,10 +9,18 @@ import br.eng.luan.exception.ValidacaoException;
 import br.eng.luan.model.TransacaoRequest;
 import br.eng.luan.model.TransacaoResponse;
 import br.eng.luan.processor.AtualizaSaldoProcessor;
+import br.eng.luan.processor.LockProcessor;
+import br.eng.luan.processor.UnLockProcessor;
+import jakarta.enterprise.context.ApplicationScoped;
 
+@ApplicationScoped
 public class TransacaoRoute extends RouteBuilder {
-
+    
     private Processor atualizaSaldoProcessor = new AtualizaSaldoProcessor();
+
+    private Processor lockProcessor = new LockProcessor();
+
+    private Processor unLockProcessor = new UnLockProcessor();
 
     @Override
     public void configure() throws Exception {
@@ -20,11 +28,12 @@ public class TransacaoRoute extends RouteBuilder {
         from("direct:transacao")
             .unmarshal().json(TransacaoRequest.class)
             .setHeader("id").method(Integer.class, "parseInt(${header.id})")
+            .process(lockProcessor)
             .setHeader("valor").simple("${body.valor}")
             .setHeader("tipo").simple("${body.tipo}")
             .setHeader("descricao").simple("${body.descricao}")
 
-            .setBody().simple("SELECT * FROM clientes WHERE cliente_id = :?id;")
+            .setBody().constant("SELECT * FROM clientes WHERE cliente_id = :?id;")
             .to("jdbc:datasource?useHeadersAsParameters=true")
 
             .choice()
@@ -38,10 +47,10 @@ public class TransacaoRoute extends RouteBuilder {
                     .doTry()
                         .process(atualizaSaldoProcessor)
 
-                        .setBody().simple("UPDATE clientes SET saldo = :?saldo WHERE cliente_id = :?id;")
-                        .to("jdbc:datasource?useHeadersAsParameters=true")
-
-                        .setBody().simple("INSERT INTO transacoes (cliente_id, valor, tipo, descricao) VALUES (:?id, :?valor, :?tipo, :?descricao);")
+                        .setBody().constant("UPDATE clientes SET saldo = :?saldo " +
+                            "WHERE cliente_id = :?id; " +
+                            "INSERT INTO transacoes (cliente_id, valor, tipo, descricao) " +
+                            "VALUES (:?id, :?valor, :?tipo, :?descricao);")
                         .to("jdbc:datasource?useHeadersAsParameters=true")
                         
                         .setBody().constant(new TransacaoResponse())
@@ -54,8 +63,9 @@ public class TransacaoRoute extends RouteBuilder {
                         .setBody().simple("${exchangeProperty."+Exchange.EXCEPTION_CAUGHT+".getMessage()}")
                         .endDoTry()
                     .end()
-                    
-            .end();
+            .end()
+            .process(unLockProcessor);
+
     }
     
 }
