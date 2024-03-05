@@ -1,29 +1,28 @@
 package br.eng.luan;
 
+import com.hazelcast.client.HazelcastClient;
+import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.cp.lock.FencedLock;
 
-import io.quarkus.runtime.Startup;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
-@Startup
-@ApplicationScoped 
 public class HazelcastService {
 
-    @Inject
-    HazelcastInstance hazelcastInstance;
+    private HazelcastInstance hazelcastInstance;
 
     private static HazelcastService hazelcastService;
 
-    public HazelcastService(HazelcastInstance hazelcastInstance) {
-        this.hazelcastInstance = hazelcastInstance;
+    public HazelcastService(String hazelcastHost) {
+        ClientConfig clientConfig = new ClientConfig();
+        String[] members = {hazelcastHost};
+
+        clientConfig.getNetworkConfig().addAddress(members);
+        this.hazelcastInstance = HazelcastClient.newHazelcastClient(clientConfig);
     }
 
-    public static HazelcastService getServiceInstance() {
+    public static HazelcastService getServiceInstance(String hazelcastHost) {
         if (hazelcastService == null) {
-            System.out.println("--------- Inicializando");
-            hazelcastService = new HazelcastService(hazelcastInstance);
+            hazelcastService = new HazelcastService(hazelcastHost);
         }
         return hazelcastService;
     }

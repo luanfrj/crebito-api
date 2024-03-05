@@ -12,7 +12,8 @@ public class LockProcessor implements Processor {
     @Override
     public void process(Exchange exchange) throws Exception {
         int id = (Integer) exchange.getIn().getHeader("id");
-        HazelcastService hazelcastService = HazelcastService.getServiceInstance();
+        String hazelcastHost = (String) exchange.getProperty("hazelcastHost");
+        HazelcastService hazelcastService = HazelcastService.getServiceInstance(hazelcastHost);
         FencedLock lock = hazelcastService.getLock(Integer.toString(id));
         lock.lock();
     }

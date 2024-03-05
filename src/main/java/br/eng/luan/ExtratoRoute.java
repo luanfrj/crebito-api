@@ -3,6 +3,7 @@ package br.eng.luan;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.dataformat.JsonLibrary;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import br.eng.luan.processor.ExtratoProcessor;
 import br.eng.luan.processor.LockProcessor;
@@ -11,6 +12,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped 
 public class ExtratoRoute extends RouteBuilder {
+
+    @ConfigProperty(name = "hazelcast.host")
+    String hazelcastHost;
 
     private ExtratoProcessor extratoProcessor = new ExtratoProcessor();
 
@@ -22,6 +26,7 @@ public class ExtratoRoute extends RouteBuilder {
     public void configure() throws Exception {
         
         from("direct:extrato")
+            .setProperty("hazelcastHost", constant(hazelcastHost))
             .setHeader("id").method(Integer.class, "parseInt(${header.id})")
             .process(lockProcessor)
             .setBody().simple("SELECT * FROM clientes WHERE cliente_id = :?id;")

@@ -12,10 +12,9 @@ public class UnLockProcessor implements Processor {
     @Override
     public void process(Exchange exchange) throws Exception {
         int id = (Integer) exchange.getIn().getHeader("id");
-        exchange.getContext().getRegistry().lookupByName("someBean");
-        HazelcastService hazelcastService = HazelcastService.getServiceInstance();
+        String hazelcastHost = (String) exchange.getProperty("hazelcastHost");
+        HazelcastService hazelcastService = HazelcastService.getServiceInstance(hazelcastHost);
         FencedLock lock = hazelcastService.getLock(Integer.toString(id));
-        lock.lock();
-        System.out.println("Locado?: " + lock.isLocked());
+        lock.unlock();
     }
 }

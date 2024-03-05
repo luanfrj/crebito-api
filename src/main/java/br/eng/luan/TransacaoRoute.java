@@ -4,6 +4,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.dataformat.JsonLibrary;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import br.eng.luan.exception.ValidacaoException;
 import br.eng.luan.model.TransacaoRequest;
@@ -16,16 +17,20 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class TransacaoRoute extends RouteBuilder {
     
+    @ConfigProperty(name = "hazelcast.host")
+    String hazelcastHost;
+    
     private Processor atualizaSaldoProcessor = new AtualizaSaldoProcessor();
 
-    private Processor lockProcessor = new LockProcessor();
+    private LockProcessor lockProcessor = new LockProcessor();
 
-    private Processor unLockProcessor = new UnLockProcessor();
+    private UnLockProcessor unLockProcessor = new UnLockProcessor();
 
     @Override
     public void configure() throws Exception {
 
         from("direct:transacao")
+            .setProperty("hazelcastHost", constant(hazelcastHost))
             .unmarshal().json(TransacaoRequest.class)
             .setHeader("id").method(Integer.class, "parseInt(${header.id})")
             .process(lockProcessor)
