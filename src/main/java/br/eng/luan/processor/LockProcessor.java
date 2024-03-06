@@ -14,7 +14,7 @@ public class LockProcessor implements Processor {
     static final Logger logger = LoggerFactory.getLogger(LockProcessor.class);
 
     @Override
-    public void process(Exchange exchange) throws Exception {
+    public synchronized void process(Exchange exchange) throws Exception {
         int id = (Integer) exchange.getIn().getHeader("id");
         String hazelcastHost = (String) exchange.getProperty("hazelcastHost");
         HazelcastService hazelcastService = HazelcastService.getServiceInstance(hazelcastHost);

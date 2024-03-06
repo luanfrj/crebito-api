@@ -1,7 +1,6 @@
 package br.eng.luan;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.dataformat.JsonLibrary;
@@ -35,9 +34,7 @@ public class TransacaoRoute extends RouteBuilder {
     public void configure() throws Exception {
 
         from("direct:transacao")
-            .log(LoggingLevel.INFO, "INICIO transacao")
             .setProperty("hazelcastHost", constant(hazelcastHost))
-            .unmarshal().json(TransacaoRequest.class)
             .doTry()
                 .setHeader("id").method(Integer.class, "parseInt(${header.id})")
                 .endDoTry()
@@ -45,7 +42,10 @@ public class TransacaoRoute extends RouteBuilder {
                 .setHeader("id").constant(6)
             .end()
             .process(lockProcessor)
-            .setProperty("transacaoRequest", simple("${body}"))
+            .unmarshal().json(TransacaoRequest.class)
+            .setHeader("valor").simple("${body.valor}")
+            .setHeader("tipo").simple("${body.tipo}")
+            .setHeader("descricao").simple("${body.descricao}")
 
             .setBody().constant("SELECT * FROM clientes WHERE cliente_id = :?id;")
             .to("jdbc:datasource?useHeadersAsParameters=true")
@@ -60,13 +60,11 @@ public class TransacaoRoute extends RouteBuilder {
                     
                     .doTry()
                         .process(atualizaSaldoProcessor)
-                        .log(LoggingLevel.INFO, "Iniciando atualização")
                         .setBody().constant("UPDATE clientes SET saldo = :?saldo " +
                             "WHERE cliente_id = :?id; " +
                             "INSERT INTO transacoes (cliente_id, valor, tipo, descricao) " +
                             "VALUES (:?id, :?valor, :?tipo, :?descricao);")
                         .to("jdbc:datasource?useHeadersAsParameters=true")
-                        .log(LoggingLevel.INFO, "FIM atualização")
                         .setBody().constant(new TransacaoResponse())
                         .script().simple("${body.setLimite(${header.limite})}")
                         .script().simple("${body.setSaldo(${header.saldo})}")
@@ -77,8 +75,7 @@ public class TransacaoRoute extends RouteBuilder {
                         .setBody().simple("${exchangeProperty."+Exchange.EXCEPTION_CAUGHT+".getMessage()}")
                     .end()
             .end()
-            .process(unLockProcessor)
-            .log(LoggingLevel.INFO, "FIM transacao");
+            .process(unLockProcessor);
 
     }
     

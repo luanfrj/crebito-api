@@ -3,7 +3,7 @@ package br.eng.luan.processor;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -15,8 +15,8 @@ import br.eng.luan.model.Transacao;
 public class ExtratoProcessor implements Processor {
 
     @Override
-    public void process(Exchange exchange) throws Exception {
-        ArrayList<HashMap<String, Object>> resultList = (ArrayList) exchange.getIn().getBody();
+    public synchronized void process(Exchange exchange) throws Exception {
+        ArrayList<LinkedHashMap<String, Object>> resultList = exchange.getIn().getBody(ArrayList.class);
 
         int saldo = (int) resultList.get(0).get("saldo");
         int limite = (int) resultList.get(0).get("limite");
@@ -28,7 +28,7 @@ public class ExtratoProcessor implements Processor {
 
         extrato.setUltimas_transacoes(new ArrayList<>());
 
-        for (HashMap result : resultList) {
+        for (LinkedHashMap<String, Object> result : resultList) {
             if (result.get("valor") != null) {
                 Transacao transacao = new Transacao(
                     (int) result.get("valor"), 
