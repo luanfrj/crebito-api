@@ -33,7 +33,7 @@ public class AtualizaSaldoProcessor implements Processor {
         
         switch (tipo) {
             case ("d"):
-                saldo.addAndGet(-valor_int)
+                saldo.addAndGet(-valor_int);
                 break;
             case ("c"):
                 saldo.addAndGet(valor_int);
