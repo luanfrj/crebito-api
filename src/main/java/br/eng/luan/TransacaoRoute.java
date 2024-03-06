@@ -1,6 +1,7 @@
 package br.eng.luan;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.dataformat.JsonLibrary;
@@ -12,11 +13,15 @@ import br.eng.luan.model.TransacaoResponse;
 import br.eng.luan.processor.AtualizaSaldoProcessor;
 import br.eng.luan.processor.LockProcessor;
 import br.eng.luan.processor.UnLockProcessor;
+import io.vertx.core.impl.logging.Logger;
+import io.vertx.core.impl.logging.LoggerFactory;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class TransacaoRoute extends RouteBuilder {
-    
+
+    static final Logger logger = LoggerFactory.getLogger(TransacaoRoute.class);
+
     @ConfigProperty(name = "hazelcast.host")
     String hazelcastHost;
     
@@ -30,13 +35,17 @@ public class TransacaoRoute extends RouteBuilder {
     public void configure() throws Exception {
 
         from("direct:transacao")
+            .log(LoggingLevel.INFO, "INICIO transacao")
             .setProperty("hazelcastHost", constant(hazelcastHost))
             .unmarshal().json(TransacaoRequest.class)
-            .setHeader("id").method(Integer.class, "parseInt(${header.id})")
+            .doTry()
+                .setHeader("id").method(Integer.class, "parseInt(${header.id})")
+                .endDoTry()
+            .doCatch(Exception.class)
+                .setHeader("id").constant(6)
+            .end()
             .process(lockProcessor)
-            .setHeader("valor").simple("${body.valor}")
-            .setHeader("tipo").simple("${body.tipo}")
-            .setHeader("descricao").simple("${body.descricao}")
+            .setProperty("transacaoRequest", simple("${body}"))
 
             .setBody().constant("SELECT * FROM clientes WHERE cliente_id = :?id;")
             .to("jdbc:datasource?useHeadersAsParameters=true")
@@ -51,13 +60,13 @@ public class TransacaoRoute extends RouteBuilder {
                     
                     .doTry()
                         .process(atualizaSaldoProcessor)
-
+                        .log(LoggingLevel.INFO, "Iniciando atualização")
                         .setBody().constant("UPDATE clientes SET saldo = :?saldo " +
                             "WHERE cliente_id = :?id; " +
                             "INSERT INTO transacoes (cliente_id, valor, tipo, descricao) " +
                             "VALUES (:?id, :?valor, :?tipo, :?descricao);")
                         .to("jdbc:datasource?useHeadersAsParameters=true")
-                        
+                        .log(LoggingLevel.INFO, "FIM atualização")
                         .setBody().constant(new TransacaoResponse())
                         .script().simple("${body.setLimite(${header.limite})}")
                         .script().simple("${body.setSaldo(${header.saldo})}")
@@ -66,10 +75,10 @@ public class TransacaoRoute extends RouteBuilder {
                     .doCatch(ValidacaoException.class)
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("422"))
                         .setBody().simple("${exchangeProperty."+Exchange.EXCEPTION_CAUGHT+".getMessage()}")
-                        .endDoTry()
                     .end()
             .end()
-            .process(unLockProcessor);
+            .process(unLockProcessor)
+            .log(LoggingLevel.INFO, "FIM transacao");
 
     }
     

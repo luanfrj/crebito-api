@@ -2,17 +2,17 @@ package br.eng.luan.model;
 
 public class TransacaoRequest {
 
-    private int valor;
+    private double valor;
 
     private String tipo;
 
     private String descricao;
 
-    public int getValor() {
+    public double getValor() {
         return valor;
     }
 
-    public void setValor(int valor) {
+    public void setValor(double valor) {
         this.valor = valor;
     }
 

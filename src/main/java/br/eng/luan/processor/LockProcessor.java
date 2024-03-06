@@ -6,8 +6,12 @@ import org.apache.camel.Processor;
 import com.hazelcast.cp.lock.FencedLock;
 
 import br.eng.luan.HazelcastService;
+import io.vertx.core.impl.logging.Logger;
+import io.vertx.core.impl.logging.LoggerFactory;
 
 public class LockProcessor implements Processor {
+
+    static final Logger logger = LoggerFactory.getLogger(LockProcessor.class);
 
     @Override
     public void process(Exchange exchange) throws Exception {
