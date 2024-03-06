@@ -72,8 +72,8 @@ public class TransacaoRoute extends RouteBuilder {
                         .endDoTry()
                     .doCatch(ValidacaoException.class)
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("422"))
-                        .setBody().simple("${exchangeProperty."+Exchange.EXCEPTION_CAUGHT+".getMessage()}")
-                    .end()
+                        .setBody().simple("${exchangeProperty."+Exchange.EXCEPTION_CAUGHT+".getMessage()}") 
+                    .endDoTry()
             .end()
             .process(unLockProcessor);
 

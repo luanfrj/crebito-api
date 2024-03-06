@@ -11,7 +11,7 @@ import br.eng.luan.exception.ValidacaoException;
 public class AtualizaSaldoProcessor implements Processor {
 
     @Override
-    public synchronized void process(Exchange exchange) throws Exception {
+    public void process(Exchange exchange) throws Exception {
 
         Message messageIn = exchange.getIn();
         int saldoValue = messageIn.getHeader("saldo", int.class);

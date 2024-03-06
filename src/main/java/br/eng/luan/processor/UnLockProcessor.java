@@ -14,7 +14,7 @@ public class UnLockProcessor implements Processor {
     static final Logger logger = LoggerFactory.getLogger(UnLockProcessor.class);
 
     @Override
-    public synchronized void process(Exchange exchange) throws Exception {
+    public void process(Exchange exchange) throws Exception {
         int id = (Integer) exchange.getIn().getHeader("id");
         String hazelcastHost = (String) exchange.getProperty("hazelcastHost");
         HazelcastService hazelcastService = HazelcastService.getServiceInstance(hazelcastHost);

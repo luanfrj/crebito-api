@@ -15,7 +15,7 @@ import br.eng.luan.model.Transacao;
 public class ExtratoProcessor implements Processor {
 
     @Override
-    public synchronized void process(Exchange exchange) throws Exception {
+    public void process(Exchange exchange) throws Exception {
         ArrayList<LinkedHashMap<String, Object>> resultList = exchange.getIn().getBody(ArrayList.class);
 
         int saldo = (int) resultList.get(0).get("saldo");

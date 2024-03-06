@@ -14,11 +14,12 @@ public class LockProcessor implements Processor {
     static final Logger logger = LoggerFactory.getLogger(LockProcessor.class);
 
     @Override
-    public synchronized void process(Exchange exchange) throws Exception {
+    public void process(Exchange exchange) throws Exception {
         int id = (Integer) exchange.getIn().getHeader("id");
         String hazelcastHost = (String) exchange.getProperty("hazelcastHost");
         HazelcastService hazelcastService = HazelcastService.getServiceInstance(hazelcastHost);
         FencedLock lock = hazelcastService.getLock(Integer.toString(id));
+        logger.info(id + "is locked?" + lock.isLocked());
         lock.lock();
     }
 }
