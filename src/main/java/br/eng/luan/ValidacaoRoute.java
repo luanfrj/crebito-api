@@ -29,7 +29,7 @@ public class ValidacaoRoute extends RouteBuilder {
             .otherwise()
                 .setBody(constant("Url invalida"))
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
-                .to("direct:unlockStop")
+                .stop()
             .end();
 
         from("direct:validaValor")
@@ -42,7 +42,7 @@ public class ValidacaoRoute extends RouteBuilder {
                     .log(LoggingLevel.DEBUG, logger.getName(), "Valor: ${body.valor}")
                     .setBody(constant("Falha de validação"))
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("422"))
-                    .to("direct:unlockStop")
+                    .stop()
             .end();
 
         from("direct:validaTipo")
@@ -55,7 +55,7 @@ public class ValidacaoRoute extends RouteBuilder {
                     .log(LoggingLevel.DEBUG, logger.getName(), "Tipo: ${body.tipo}")
                     .setBody(constant("Falha de validação"))
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("422"))
-                    .to("direct:unlockStop")
+                    .stop()
             .end();
 
         from("direct:validaDescricao")
@@ -68,7 +68,7 @@ public class ValidacaoRoute extends RouteBuilder {
                     .log(LoggingLevel.DEBUG, logger.getName(), "Descricao: ${body.descricao}")
                     .setBody(constant("Falha de validação"))
                     .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("422"))
-                    .to("direct:unlockStop")
+                    .stop()
             .end();
 
         from("direct:validaCliente")

@@ -64,20 +64,34 @@ public class TransacaoRoute extends RouteBuilder {
                 .otherwise()
                     .log(LoggingLevel.DEBUG, logger.getName(), "Validação de saldo concluida")
             .end()
- 
+
+            .log(LoggingLevel.DEBUG, logger.getName(), "Escrita no BD Iniciada")
+            .wireTap("direct:insereTransacao")
+            .to("direct:updateSaldo")
+            .log(LoggingLevel.DEBUG, logger.getName(), "Escrita no BD concluída")
+            /*
             .setBody().constant("UPDATE clientes SET saldo = :?saldo " +
                 "WHERE cliente_id = :?id; " +
                 "INSERT INTO transacoes (cliente_id, valor, tipo, descricao) " +
                 "VALUES (:?id, :?valor, :?tipo, :?descricao);")
             .to("jdbc:datasource?useHeadersAsParameters=true")
+            */
             .process(unLockProcessor)
-            .log(LoggingLevel.DEBUG, logger.getName(), "Escrita no BD concluída")
-
 
             .setBody().constant(new TransacaoResponse())
             .script().simple("${body.setLimite(${header.limite})}")
             .script().simple("${body.setSaldo(${header.saldo})}")
             .marshal().json(JsonLibrary.Jackson);
+
+        from("direct:updateSaldo")
+            .setBody().constant("UPDATE clientes SET saldo = :?saldo " +
+                "WHERE cliente_id = :?id;")
+            .to("jdbc:datasource?useHeadersAsParameters=true");
+
+        from("direct:insereTransacao")
+            .setBody().constant("INSERT INTO transacoes (cliente_id, valor, tipo, descricao) " +
+                "VALUES (:?id, :?valor, :?tipo, :?descricao);")
+            .to("jdbc:datasource?useHeadersAsParameters=true");
 
     }
     
