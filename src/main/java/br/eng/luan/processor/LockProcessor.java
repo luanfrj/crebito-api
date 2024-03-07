@@ -6,12 +6,11 @@ import org.apache.camel.Processor;
 import com.hazelcast.cp.lock.FencedLock;
 
 import br.eng.luan.HazelcastService;
-import io.vertx.core.impl.logging.Logger;
-import io.vertx.core.impl.logging.LoggerFactory;
+import org.jboss.logging.Logger;
 
 public class LockProcessor implements Processor {
 
-    static final Logger logger = LoggerFactory.getLogger(LockProcessor.class);
+    static final Logger logger = Logger.getLogger(LockProcessor.class);
 
     @Override
     public void process(Exchange exchange) throws Exception {
@@ -19,7 +18,6 @@ public class LockProcessor implements Processor {
         String hazelcastHost = (String) exchange.getProperty("hazelcastHost");
         HazelcastService hazelcastService = HazelcastService.getServiceInstance(hazelcastHost);
         FencedLock lock = hazelcastService.getLock(Integer.toString(id));
-        logger.info(id + "is locked?" + lock.isLocked());
         lock.lock();
     }
 }

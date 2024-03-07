@@ -9,14 +9,13 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import br.eng.luan.processor.ExtratoProcessor;
 import br.eng.luan.processor.LockProcessor;
 import br.eng.luan.processor.UnLockProcessor;
-import io.vertx.core.impl.logging.Logger;
-import io.vertx.core.impl.logging.LoggerFactory;
+import org.jboss.logging.Logger;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped 
 public class ExtratoRoute extends RouteBuilder {
 
-    static final Logger logger = LoggerFactory.getLogger(ExtratoRoute.class);
+    static final Logger logger = Logger.getLogger(ExtratoRoute.class);
 
     @ConfigProperty(name = "hazelcast.host")
     String hazelcastHost;
@@ -32,12 +31,7 @@ public class ExtratoRoute extends RouteBuilder {
         
         from("direct:extrato")
             .setProperty("hazelcastHost", constant(hazelcastHost))
-            .doTry()
-                .setHeader("id").method(Integer.class, "parseInt(${header.id})")
-                .endDoTry()
-            .doCatch(Exception.class)
-                .setHeader("id").constant(6)
-            .end()
+            .to("direct:validaId")
             .process(lockProcessor)
             .setBody().constant("SELECT * FROM clientes AS c " +
                 "LEFT JOIN transacoes AS t ON c.cliente_id = t.cliente_id " +

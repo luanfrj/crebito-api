@@ -1,30 +1,25 @@
 package br.eng.luan;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import br.eng.luan.exception.ValidacaoException;
 import br.eng.luan.model.TransacaoRequest;
 import br.eng.luan.model.TransacaoResponse;
-import br.eng.luan.processor.AtualizaSaldoProcessor;
 import br.eng.luan.processor.LockProcessor;
 import br.eng.luan.processor.UnLockProcessor;
-import io.vertx.core.impl.logging.Logger;
-import io.vertx.core.impl.logging.LoggerFactory;
+import org.jboss.logging.Logger;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class TransacaoRoute extends RouteBuilder {
 
-    static final Logger logger = LoggerFactory.getLogger(TransacaoRoute.class);
+    static final Logger logger = Logger.getLogger(TransacaoRoute.class);
 
     @ConfigProperty(name = "hazelcast.host")
     String hazelcastHost;
-    
-    private Processor atualizaSaldoProcessor = new AtualizaSaldoProcessor();
 
     private LockProcessor lockProcessor = new LockProcessor();
 
@@ -34,48 +29,55 @@ public class TransacaoRoute extends RouteBuilder {
     public void configure() throws Exception {
 
         from("direct:transacao")
-            .setProperty("hazelcastHost", constant(hazelcastHost))
-            .doTry()
-                .setHeader("id").method(Integer.class, "parseInt(${header.id})")
-                .endDoTry()
-            .doCatch(Exception.class)
-                .setHeader("id").constant(6)
-            .end()
-            .process(lockProcessor)
-            .unmarshal().json(TransacaoRequest.class)
-            .setHeader("valor").simple("${body.valor}")
-            .setHeader("tipo").simple("${body.tipo}")
-            .setHeader("descricao").simple("${body.descricao}")
 
+            .setProperty("hazelcastHost", constant(hazelcastHost))
+            .to("direct:validaId")
+            
+            .unmarshal().json(TransacaoRequest.class)
+
+            .to("direct:validaValor")
+            .to("direct:validaTipo")
+            .to("direct:validaDescricao")
+
+            .process(lockProcessor)
             .setBody().constant("SELECT * FROM clientes WHERE cliente_id = :?id;")
             .to("jdbc:datasource?useHeadersAsParameters=true")
 
+            .to("direct:validaCliente")
+
             .choice()
-                .when().simple("${body.isEmpty()}")
-                    .setBody(constant("Cliente inexistente"))
-                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("404"))
+                .when().simple("${header.tipo} regex '^[c]$'")
+                    .log(LoggingLevel.DEBUG, logger.getName(), "Realizando Crédito")
+                    .setHeader("saldo").groovy("headers.saldo + headers.valor")
+                    .endChoice()
                 .otherwise()
-                    .setHeader("saldo").simple("${body[0].get(saldo)}")
-                    .setHeader("limite").simple("${body[0].get(limite)}")
-                    
-                    .doTry()
-                        .process(atualizaSaldoProcessor)
-                        .setBody().constant("UPDATE clientes SET saldo = :?saldo " +
-                            "WHERE cliente_id = :?id; " +
-                            "INSERT INTO transacoes (cliente_id, valor, tipo, descricao) " +
-                            "VALUES (:?id, :?valor, :?tipo, :?descricao);")
-                        .to("jdbc:datasource?useHeadersAsParameters=true")
-                        .setBody().constant(new TransacaoResponse())
-                        .script().simple("${body.setLimite(${header.limite})}")
-                        .script().simple("${body.setSaldo(${header.saldo})}")
-                        .marshal().json(JsonLibrary.Jackson)
-                        .endDoTry()
-                    .doCatch(ValidacaoException.class)
-                        .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("422"))
-                        .setBody().simple("${exchangeProperty."+Exchange.EXCEPTION_CAUGHT+".getMessage()}") 
-                    .endDoTry()
+                    .log(LoggingLevel.DEBUG, logger.getName(), "Realizando Débito")
+                    .setHeader("saldo").groovy("headers.saldo - headers.valor")
             .end()
-            .process(unLockProcessor);
+
+            .choice()
+                .when().groovy("headers.saldo * -1 > headers.limite")
+                    .log(LoggingLevel.DEBUG, logger.getName(), "Saldo inválido")
+                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("422"))
+                    .setBody(constant("Limite excedido"))
+                    .to("direct:unlockStop")
+                .otherwise()
+                    .log(LoggingLevel.DEBUG, logger.getName(), "Validação de saldo concluida")
+            .end()
+ 
+            .setBody().constant("UPDATE clientes SET saldo = :?saldo " +
+                "WHERE cliente_id = :?id; " +
+                "INSERT INTO transacoes (cliente_id, valor, tipo, descricao) " +
+                "VALUES (:?id, :?valor, :?tipo, :?descricao);")
+            .to("jdbc:datasource?useHeadersAsParameters=true")
+            .process(unLockProcessor)
+            .log(LoggingLevel.DEBUG, logger.getName(), "Escrita no BD concluída")
+
+
+            .setBody().constant(new TransacaoResponse())
+            .script().simple("${body.setLimite(${header.limite})}")
+            .script().simple("${body.setSaldo(${header.saldo})}")
+            .marshal().json(JsonLibrary.Jackson);
 
     }
     

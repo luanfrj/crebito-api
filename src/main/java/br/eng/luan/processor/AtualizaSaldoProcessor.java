@@ -25,7 +25,7 @@ public class AtualizaSaldoProcessor implements Processor {
         }
 
         if (descricao == null || descricao.length() < 1 || descricao.length() > 10) {
-            throw new ValidacaoException("A descrição não deve ter entre 1 e 10 caracteres");
+            throw new ValidacaoException("A descrição deve ter entre 1 e 10 caracteres");
         }
 
         int valor_int = (int) valor;
