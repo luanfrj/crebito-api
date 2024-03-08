@@ -31,6 +31,15 @@ public class TransacaoRequest {
     public void setDescricao(String descricao) {
         this.descricao = descricao;
     }
-    
+
+    public boolean isNotValid() {
+        if (
+            ( valor % 1 == 0 && valor > 0 ) && 
+            ( tipo.equals("c") || tipo.equals("d") ) && 
+            ( descricao != null && descricao.length() > 0 && descricao.length() < 11) ){
+            return false;
+        }
+        return true;
+    }
     
 }

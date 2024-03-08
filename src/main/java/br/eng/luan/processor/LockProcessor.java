@@ -1,5 +1,7 @@
 package br.eng.luan.processor;
 
+import java.util.concurrent.TimeUnit;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 
@@ -18,6 +20,7 @@ public class LockProcessor implements Processor {
         String hazelcastHost = (String) exchange.getProperty("hazelcastHost");
         HazelcastService hazelcastService = HazelcastService.getServiceInstance(hazelcastHost);
         FencedLock lock = hazelcastService.getLock(Integer.toString(id));
+        //lock.tryLock (1000, TimeUnit.MILLISECONDS);
         lock.lock();
     }
 }

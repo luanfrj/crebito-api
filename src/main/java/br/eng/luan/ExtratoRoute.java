@@ -31,7 +31,12 @@ public class ExtratoRoute extends RouteBuilder {
         
         from("direct:extrato")
             .setProperty("hazelcastHost", constant(hazelcastHost))
-            .to("direct:validaId")
+            .filter().simple("${header.id} not regex '^-?\\d+?$'")
+                .setBody(constant("Url invalida"))
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("400"))
+                .stop()
+            .end()
+            .setHeader("id").method(Integer.class, "parseInt(${header.id})")
             .process(lockProcessor)
             .setBody().constant("SELECT * FROM clientes AS c " +
                 "LEFT JOIN transacoes AS t ON c.cliente_id = t.cliente_id " +
