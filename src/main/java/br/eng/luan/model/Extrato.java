@@ -8,6 +8,11 @@ public class Extrato {
 
     private ArrayList<Transacao> ultimas_transacoes;
 
+    public Extrato(Saldo saldo, ArrayList<Transacao> ultimas_transacoes) {
+        this.saldo = saldo;
+        this.ultimas_transacoes = ultimas_transacoes;
+    }
+
     public void inserirTransacao(Transacao transacao) {
         this.ultimas_transacoes.add(transacao);
     }

@@ -1,7 +1,5 @@
 package br.eng.luan.processor;
 
-import java.util.concurrent.TimeUnit;
-
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 
