@@ -70,7 +70,8 @@
     </dependency>
     <dependency>
       <groupId>com.hazelcast</groupId>
-      <artifactId>quarkus-hazelcast-client</artifactId>
+      <artifactId>hazelcast</artifactId>
+      <version>5.3.6</version>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
